@@ -7,7 +7,6 @@
     "build": "tsc",
     "test": "node --test test/*.test.ts"
   },
-  "dependencies": { "@modelcontextprotocol/sdk": "^1.26.0" },
   "devDependencies": { "typescript": "^5.7.2", "@types/node": "^22.10.2" },
   "license": "MIT"
 }
