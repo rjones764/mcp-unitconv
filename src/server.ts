@@ -45,23 +45,44 @@ function sendError(id: JsonRpcId, code: number, message: string): void {
   send({ jsonrpc: "2.0", id, error: { code, message } });
 }
 
+function toolError(id: JsonRpcId, message: string): void {
+  sendResult(id, { content: [{ type: "text", text: message }], isError: true });
+}
+
 function handleToolsCall(id: JsonRpcId, params: Record<string, unknown> | undefined): void {
   const name = params?.name;
-  const args = (params?.arguments ?? {}) as { value?: number; from?: string; to?: string };
+  const args = (params?.arguments ?? {}) as Record<string, unknown>;
 
   if (name !== "convert") {
     sendError(id, -32602, `unknown tool: ${String(name)}`);
     return;
   }
 
+  // the input schema only documents the expected shape - nothing enforces it at
+  // runtime, and a client sending e.g. a stringly-typed value would otherwise
+  // silently produce NaN instead of a usable error
+  const { value, from, to } = args;
+  if (typeof value !== "number" || !Number.isFinite(value)) {
+    toolError(id, "invalid arguments: value must be a finite number");
+    return;
+  }
+  if (typeof from !== "string") {
+    toolError(id, "invalid arguments: from must be a string");
+    return;
+  }
+  if (typeof to !== "string") {
+    toolError(id, "invalid arguments: to must be a string");
+    return;
+  }
+
   try {
-    const result = convert(args.value as number, args.from as string, args.to as string);
+    const result = convert(value, from, to);
     sendResult(id, { content: [{ type: "text", text: String(result) }] });
   } catch (err) {
     // tool execution errors are reported inside the result, not as JSON-RPC errors,
     // so the client model sees the message instead of the call just failing silently
     const message = err instanceof Error ? err.message : String(err);
-    sendResult(id, { content: [{ type: "text", text: message }], isError: true });
+    toolError(id, message);
   }
 }
 

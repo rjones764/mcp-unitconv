@@ -103,6 +103,36 @@ test("tools/call reports a dimension mismatch as a tool error, not a protocol er
   }
 });
 
+test("tools/call reports a non-numeric value as a tool error", async () => {
+  const server = new ServerHandle();
+  try {
+    const response = await server.request("tools/call", {
+      name: "convert",
+      arguments: { value: "1", from: "km", to: "m" },
+    });
+    const result = response.result as { content: { type: string; text: string }[]; isError?: boolean };
+    assert.equal(result.isError, true);
+    assert.match(result.content[0].text, /value must be a finite number/);
+  } finally {
+    server.close();
+  }
+});
+
+test("tools/call reports a missing unit argument as a tool error", async () => {
+  const server = new ServerHandle();
+  try {
+    const response = await server.request("tools/call", {
+      name: "convert",
+      arguments: { value: 1, from: "km" },
+    });
+    const result = response.result as { content: { type: string; text: string }[]; isError?: boolean };
+    assert.equal(result.isError, true);
+    assert.match(result.content[0].text, /to must be a string/);
+  } finally {
+    server.close();
+  }
+});
+
 test("tools/call rejects an unknown tool name", async () => {
   const server = new ServerHandle();
   try {
