@@ -50,6 +50,38 @@ test("unknown target unit throws", () => {
   assert.throws(() => convert(1, "km", "furlong"), /unknown unit: furlong/);
 });
 
+test("cm to m", () => {
+  assert.equal(convert(100, "cm", "m"), 1);
+});
+
+test("mm to m", () => {
+  assert.equal(convert(1000, "mm", "m"), 1);
+});
+
+test("yards to feet", () => {
+  assert.equal(convert(1, "yd", "ft"), 3);
+});
+
+test("inches to feet", () => {
+  assert.ok(Math.abs(convert(12, "in", "ft") - 1) < 1e-9);
+});
+
+test("milligrams to kilograms", () => {
+  assert.equal(convert(1000000, "mg", "kg"), 1);
+});
+
+test("ounces to pounds", () => {
+  assert.ok(Math.abs(convert(16, "oz", "lb") - 1) < 1e-9);
+});
+
+test("milliseconds to seconds", () => {
+  assert.equal(convert(1000, "ms", "s"), 1);
+});
+
+test("day to hours", () => {
+  assert.equal(convert(1, "day", "h"), 24);
+});
+
 test("supportedUnits lists every unit exactly once", () => {
   const units = supportedUnits();
   assert.equal(new Set(units).size, units.length);
