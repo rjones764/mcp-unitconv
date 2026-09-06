@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 import { createInterface } from "node:readline";
-import { convert } from "./convert.ts";
+import { convert, supportedUnits } from "./convert.ts";
 
 // Minimal MCP server: JSON-RPC 2.0 messages, one per line, over stdio.
 // No SDK — the protocol surface we need (initialize, tools/list, tools/call) is small.
@@ -8,6 +8,10 @@ import { convert } from "./convert.ts";
 const PROTOCOL_VERSION = "2024-11-05";
 const SERVER_NAME = "mcp-unitconv";
 const SERVER_VERSION = "0.1.0";
+
+// listed as an enum so a client can validate/autocomplete units instead of
+// guessing from the description text
+const UNITS = supportedUnits();
 
 const CONVERT_TOOL = {
   name: "convert",
@@ -17,8 +21,8 @@ const CONVERT_TOOL = {
     type: "object",
     properties: {
       value: { type: "number", description: "the numeric value to convert" },
-      from: { type: "string", description: "unit to convert from, e.g. 'km'" },
-      to: { type: "string", description: "unit to convert to, e.g. 'mi'" },
+      from: { type: "string", description: "unit to convert from, e.g. 'km'", enum: UNITS },
+      to: { type: "string", description: "unit to convert to, e.g. 'mi'", enum: UNITS },
     },
     required: ["value", "from", "to"],
   },

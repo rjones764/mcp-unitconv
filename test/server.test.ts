@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import { spawn, type ChildProcessWithoutNullStreams } from "node:child_process";
 import { createInterface } from "node:readline";
 import { fileURLToPath } from "node:url";
+import { supportedUnits } from "../src/convert.ts";
 
 const SERVER_PATH = fileURLToPath(new URL("../src/server.ts", import.meta.url));
 
@@ -68,6 +69,22 @@ test("tools/list exposes the convert tool", async () => {
     const result = response.result as { tools: { name: string }[] };
     assert.equal(result.tools.length, 1);
     assert.equal(result.tools[0].name, "convert");
+  } finally {
+    server.close();
+  }
+});
+
+test("tools/list documents every supported unit as an enum on from/to", async () => {
+  const server = new ServerHandle();
+  try {
+    const response = await server.request("tools/list");
+    const result = response.result as {
+      tools: { inputSchema: { properties: { from: { enum: string[] }; to: { enum: string[] } } } }[];
+    };
+    const { from, to } = result.tools[0].inputSchema.properties;
+    const units = supportedUnits();
+    assert.deepEqual(from.enum, units);
+    assert.deepEqual(to.enum, units);
   } finally {
     server.close();
   }
