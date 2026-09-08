@@ -17,6 +17,8 @@ interface JsonRpcResponse {
 class ServerHandle {
   private child: ChildProcessWithoutNullStreams;
   private pending = new Map<number, (response: JsonRpcResponse) => void>();
+  // for responses that carry no id we can key on (parse errors, malformed input)
+  private unmatched: ((response: JsonRpcResponse) => void)[] = [];
   private nextId = 1;
 
   constructor() {
@@ -33,7 +35,10 @@ class ServerHandle {
       if (resolve) {
         this.pending.delete(response.id as number);
         resolve(response);
+        return;
       }
+      const waiter = this.unmatched.shift();
+      if (waiter) waiter(response);
     });
   }
 
@@ -42,6 +47,17 @@ class ServerHandle {
     return new Promise((resolve) => {
       this.pending.set(id, resolve);
       this.child.stdin.write(JSON.stringify({ jsonrpc: "2.0", id, method, params }) + "\n");
+    });
+  }
+
+  // sends a raw line, bypassing JSON-RPC framing, for testing malformed input
+  writeRaw(line: string): void {
+    this.child.stdin.write(line + "\n");
+  }
+
+  nextUnmatched(): Promise<JsonRpcResponse> {
+    return new Promise((resolve) => {
+      this.unmatched.push(resolve);
     });
   }
 
@@ -158,6 +174,19 @@ test("tools/call rejects an unknown tool name", async () => {
       arguments: {},
     });
     assert.equal(response.error?.code, -32602);
+  } finally {
+    server.close();
+  }
+});
+
+test("malformed json on stdin produces a json-rpc parse error", async () => {
+  const server = new ServerHandle();
+  try {
+    const responsePromise = server.nextUnmatched();
+    server.writeRaw("this is not json");
+    const response = await responsePromise;
+    assert.equal(response.id, null);
+    assert.equal(response.error?.code, -32700);
   } finally {
     server.close();
   }
