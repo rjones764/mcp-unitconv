@@ -166,6 +166,21 @@ test("tools/call reports a missing unit argument as a tool error", async () => {
   }
 });
 
+test("tools/call reports an unknown unit as a tool error", async () => {
+  const server = new ServerHandle();
+  try {
+    const response = await server.request("tools/call", {
+      name: "convert",
+      arguments: { value: 1, from: "furlong", to: "km" },
+    });
+    const result = response.result as { content: { type: string; text: string }[]; isError?: boolean };
+    assert.equal(result.isError, true);
+    assert.match(result.content[0].text, /unknown unit: furlong/);
+  } finally {
+    server.close();
+  }
+});
+
 test("tools/call rejects an unknown tool name", async () => {
   const server = new ServerHandle();
   try {
