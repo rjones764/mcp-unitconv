@@ -3,6 +3,7 @@
   "version": "0.1.0",
   "type": "module",
   "bin": { "mcp-unitconv": "dist/server.js" },
+  "engines": { "node": ">=22.18.0" },
   "scripts": {
     "build": "tsc",
     "test": "node --test test/*.test.ts"

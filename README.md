@@ -7,6 +7,9 @@ Supports length, mass, time and temperature.
 
 ## Install
 
+Requires Node 22.18 or newer — the test script runs the `.ts` sources directly via
+Node's built-in type stripping, with no transpile step.
+
 ```bash
 npm install
 npm run build
