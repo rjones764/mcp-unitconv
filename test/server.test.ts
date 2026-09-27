@@ -207,6 +207,25 @@ test("malformed json on stdin produces a json-rpc parse error", async () => {
   }
 });
 
+test("a json value that isn't a request object produces an invalid-request error, not a crash", async () => {
+  const server = new ServerHandle();
+  try {
+    const responsePromise = server.nextUnmatched();
+    server.writeRaw("null");
+    const response = await responsePromise;
+    assert.equal(response.id, null);
+    assert.equal(response.error?.code, -32600);
+
+    // the malformed line must not have taken the process down - confirm it
+    // still answers a normal request afterward
+    const followUp = await server.request("initialize");
+    const result = followUp.result as { serverInfo: { name: string } };
+    assert.equal(result.serverInfo.name, "mcp-unitconv");
+  } finally {
+    server.close();
+  }
+});
+
 test("an unknown method returns a json-rpc method-not-found error", async () => {
   const server = new ServerHandle();
   try {

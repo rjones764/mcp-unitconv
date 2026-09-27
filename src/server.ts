@@ -121,13 +121,25 @@ rl.on("line", (line) => {
   const trimmed = line.trim();
   if (!trimmed) return;
 
-  let request: JsonRpcRequest;
+  let parsed: unknown;
   try {
-    request = JSON.parse(trimmed);
+    parsed = JSON.parse(trimmed);
   } catch {
     sendError(null, -32700, "parse error");
     return;
   }
 
-  handleRequest(request);
+  // valid JSON but not a request object - e.g. "null", "42", or an array - would
+  // otherwise crash handleRequest's destructuring and take the whole process down
+  if (
+    typeof parsed !== "object" ||
+    parsed === null ||
+    Array.isArray(parsed) ||
+    typeof (parsed as { method?: unknown }).method !== "string"
+  ) {
+    sendError(null, -32600, "invalid request");
+    return;
+  }
+
+  handleRequest(parsed as JsonRpcRequest);
 });
